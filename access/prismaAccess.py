@@ -17,7 +17,8 @@ class prismaAccess:
 		#self.trustedCertificateAuthoritiesUri = self.saseApi + __configV1 + "trusted-certificate-authorities"
 
 		# Configuration Management
-		#self.configurationManagementUri = self.saseApi + __configV1 + "config-versions"
+		self.configurationManagementUri = self.saseApi + __configV1 + "config-versions"
+		self.configPushUri = self.configurationManagementUri + "/candidate:push"
 
 		# Identity Services
 		#self.authenticationPortalsUri = self.saseApi + __configV1 + "authentication-portals"
@@ -26,7 +27,7 @@ class prismaAccess:
 		#self.authenticationSequencesUri = self.saseApi + __configV1 + "authentication-sequences"
 		#self.kerberosServerProfilesUri = self.saseApi + __configV1 + "kerberos-server-profiles"
 		#self.ldapServerProfilesUri = self.saseApi + __configV1 + "ldap-server-profiles"
-		#self.localUsersUri = self.saseApi + __configV1 + "local-users"
+		self.localUsersUri = self.saseApi + __configV1 + "local-users"
 		#self.mfaServersUri = self.saseApi + __configV1 + "mfa-servers"
 		#self.radiusServerProfilesUri = self.saseApi + __configV1 + "radius-server-profiles"
 		#self.samlServerProfilesUri = self.saseApi + __configV1 + "saml-server-profiles"

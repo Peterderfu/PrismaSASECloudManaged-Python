@@ -13,7 +13,14 @@ class configurationManagement:
 		rightNow = datetime.now()
 		tokenValid = bool(rightNow < self.prismaAccessObject.saseToken['expiresOn'])
 		return tokenValid
-
+	def paConfigPush(self,__configPushObject,__folder="Shared"):
+		output = None
+		if self.checkTokenStillValid():
+			api = saseApi.saseApi(self.prismaAccessObject.configPushUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
+			output = api.paCreate(__configPushObject, __folder)
+		else:
+			print("Please request new token and create new prismaAccess object.")
+		return output
 	def __init__(self, __prismaAccessObject):
 		"""configurationManagement class initialization"""
 		self.prismaAccessObject = __prismaAccessObject

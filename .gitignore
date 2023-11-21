@@ -5,3 +5,4 @@ authToken.json
 template.py
 deployment-template.json
 load-template.py
+*.pyc

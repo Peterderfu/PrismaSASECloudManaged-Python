@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import json
 
 class saseAuthentication:
-	def prismaAccessAuthLoadToken(self):
+	def prismaAccessAuthLoadToken(self,TOKEN_PATH):
 		"""
 		Loads the token information from authToken.json
 		Format of file is as follows (the values are all fake data):
@@ -15,7 +15,7 @@ class saseAuthentication:
 		"""
 		__myToken = {}
 		
-		with open("authToken.json") as __jAuthToken:
+		with open(TOKEN_PATH) as __jAuthToken:
 			__myAuthToken = __jAuthToken.read()
 
 		__myAuthTokenJson = json.loads(__myAuthToken)

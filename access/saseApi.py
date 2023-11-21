@@ -3,13 +3,13 @@ import requests
 class saseApi:
 	"""saseApi class"""
 
-	def paList(self, __folder="Shared", __displayOutput=True):
+	def paList(self, __folder="Shared", __displayOutput=False):
 		"""
 		This will list the addresses from the folder.
 		Folder defaults to shared.
 		"""
 		__params = { "folder": __folder, "limit": self.saseLimit }
-		__response = requests.get(url=self.saseUri, headers=self.saseAuthHeaders, data=__dataPayload)
+		__response = requests.get(url=self.saseUri, headers=self.saseAuthHeaders, params=__params)
 		__response = __response.json()
 
 		if __response["total"] > self.saseLimit:
