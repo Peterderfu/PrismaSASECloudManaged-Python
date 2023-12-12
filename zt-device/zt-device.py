@@ -1,13 +1,15 @@
 import sys,os,json
 sys.path.append(os.getcwd()) # add current path to system environment
+import boto3
+from botocore.exceptions import ClientError
 from auth import saseAuthentication
 from access import prismaAccess,policyObjects,identityServices,configurationManagement
 
 
 #API connection to Prisma Access setup
-def prismaAccessConnect(tokenPath):
+def prismaAccessConnect(secret):
     p = saseAuthentication.saseAuthentication()
-    p.prismaAccessAuthLoadToken(tokenPath)
+    p.prismaAccessAuth(secret['tsg_id'],secret['client_id'],secret['client_secret'])
     return prismaAccess.prismaAccess(p.saseToken)
 
 ## List all HIP Objects
@@ -28,6 +30,30 @@ def LockLocalUsers(conn,payload):
 def PushConfig(conn,payload):
     o = configurationManagement.configurationManagement(conn)
     return o.paConfigPush(payload)
+def lambda_handler(event, context):
+    secret_name = "Prisma-Access"
+    region_name = "us-east-1"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
+    # Decrypts secret using the associated KMS key.
+    secret = get_secret_value_response['SecretString']
+    conn = prismaAccessConnect(secret)
+    print(conn)
+
 if __name__ == '__main__':
     tokenPath = 'data/authToken.json'
     conn = prismaAccessConnect(tokenPath)
@@ -35,19 +61,3 @@ if __name__ == '__main__':
     # # -----------------------------------
     output = ListLocalUsers(conn)
     print(output)
-
-    # # -----------------------------------
-    # id = '40979f0e-0afa-4f05-95f3-02439400a2a2'
-    # s = '{"disabled": "True","name": "peter","password": "1234"}'
-    # payload = json.loads(s)
-    # LockLocalUsers(conn,id,payload)
-
-    # -----------------------------------
-    # s = '{"description": "disable Peter","folders": ["Mobile Users"]}'
-    # payload = json.loads(s)
-    # output = PushConfig(conn,payload)
-    
-
-
-    pass
-
