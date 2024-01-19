@@ -1,10 +1,9 @@
 .DS_Store
 sase.py
 test.py
-authToken.json
 template.py
-deployment-template.json
 load-template.py
+*.json
 <<<<<<< HEAD
 =======
 *.pyc

@@ -7,9 +7,10 @@ from access import prismaAccess,policyObjects,identityServices,configurationMana
 
 
 #API connection to Prisma Access setup
-def prismaAccessConnect(secret):
+def prismaAccessConnect(tokenPath):
     p = saseAuthentication.saseAuthentication()
-    p.prismaAccessAuth(secret['tsg_id'],secret['client_id'],secret['client_secret'])
+    # p.prismaAccessAuth(secret['tsg_id'],secret['client_id'],secret['client_secret'])
+    p.prismaAccessAuthLoadToken(tokenPath)
     return prismaAccess.prismaAccess(p.saseToken)
 
 ## List all HIP Objects
@@ -57,6 +58,7 @@ def lambda_handler(event, context):
 if __name__ == '__main__':
     tokenPath = 'data/authToken.json'
     conn = prismaAccessConnect(tokenPath)
+    
     
     # # -----------------------------------
     output = ListLocalUsers(conn)

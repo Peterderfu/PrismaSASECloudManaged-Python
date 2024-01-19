@@ -42,7 +42,9 @@ class saseApi:
 		This will create an object (by default in Shared)
 		"""
 		__params = { "folder": __folder }
-		__response = requests.post(url=self.saseUri, headers=self.saseAuthHeaders, json=__jsonObject, params=__params)
+		# __response = requests.post(url=self.saseUri, headers=self.saseAuthHeaders, json=__jsonObject, params=__params)
+		__response = requests.request("POST",url=self.saseUri, headers=self.saseAuthHeaders, data=__jsonObject, params=__params)
+		
 		__responseStatusCode = __response.status_code
 		__response = __response.json()
 
