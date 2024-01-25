@@ -7,10 +7,11 @@ from access import prismaAccess,policyObjects,identityServices,configurationMana
 
 
 #API connection to Prisma Access setup
-def prismaAccessConnect(tokenPath):
+# def prismaAccessConnect(tokenPath):
+def prismaAccessConnect(secret):
     p = saseAuthentication.saseAuthentication()
-    # p.prismaAccessAuth(secret['tsg_id'],secret['client_id'],secret['client_secret'])
-    p.prismaAccessAuthLoadToken(tokenPath)
+    p.prismaAccessAuth(secret['TSG_ID'],secret['Client_ID'],secret['Client_Secret'])
+    # p.prismaAccessAuthLoadToken(tokenPath)
     return prismaAccess.prismaAccess(p.saseToken)
 
 ## List all HIP Objects
@@ -31,7 +32,7 @@ def LockLocalUsers(conn,payload):
 def PushConfig(conn,payload):
     o = configurationManagement.configurationManagement(conn)
     return o.paConfigPush(payload)
-def lambda_handler(event, context):
+def lambda_handler():
     secret_name = "Prisma-Access"
     region_name = "us-east-1"
 
@@ -52,14 +53,13 @@ def lambda_handler(event, context):
         raise e
     # Decrypts secret using the associated KMS key.
     secret = get_secret_value_response['SecretString']
-    conn = prismaAccessConnect(secret)
-    print(conn)
+    conn = prismaAccessConnect(json.loads(secret))
+    return conn
 
 if __name__ == '__main__':
-    tokenPath = 'data/authToken.json'
-    conn = prismaAccessConnect(tokenPath)
-    
-    
+    # tokenPath = 'data/authToken.json'
+    # conn = prismaAccessConnect(tokenPath)
+    conn = lambda_handler()
     # # -----------------------------------
     output = ListLocalUsers(conn)
     print(output)
