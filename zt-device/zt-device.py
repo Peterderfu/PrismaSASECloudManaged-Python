@@ -32,7 +32,7 @@ def LockLocalUsers(conn,payload):
 def PushConfig(conn,payload):
     o = configurationManagement.configurationManagement(conn)
     return o.paConfigPush(payload)
-def lambda_handler():
+def getPrismaAccessConn():
     secret_name = "Prisma-Access"
     region_name = "us-east-1"
 
@@ -57,9 +57,7 @@ def lambda_handler():
     return conn
 
 if __name__ == '__main__':
-    # tokenPath = 'data/authToken.json'
-    # conn = prismaAccessConnect(tokenPath)
-    conn = lambda_handler()
+    conn = getPrismaAccessConn()
     # # -----------------------------------
     output = ListLocalUsers(conn)
     print(output)
