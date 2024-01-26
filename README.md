@@ -3,7 +3,7 @@ Python framework to make changes to Prisma Access Cloud Managed
 Current working version - _0.24_
 
 * Authors - [TheScriptGuy](https://github.com/TheScriptGuy)
-* API doc-[Prisma Access Configuration APIs](https://pan.dev/access/api/prisma-access-config/)
+* API doc - [Prisma Access Configuration APIs](https://pan.dev/access/api/prisma-access-config/)
 
 
 See [CHANGELOG.md](https://github.com/PaloAltoNetworks/PrismaSASECloudManaged-Python/blob/main/CHANGELOG.md) for updates.
