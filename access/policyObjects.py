@@ -1,6 +1,6 @@
 from datetime import datetime
-# from . import saseApi
-from saseApi import saseApi
+from . import saseApi
+# from saseApi import saseApi
 
 class policyObjects:
 	"""Policy Objects Class"""
@@ -344,14 +344,16 @@ class policyObjects:
 			paHipObjects.paList(__folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
+		return paHipObjects
 
 	def paHipObjectsCreate(self, __HipObjectsObject, __folder="Shared"):
 		"""Create an HIP Objects object"""
 		if self.checkTokenStillValid():
 			paHipObjects = saseApi.saseApi(self.prismaAccessObject.hipObjectsUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paHipObjects.paCreate(__HipObjectsObject, __folder)
+			output = paHipObjects.paCreate(__HipObjectsObject, __folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
+		return output
 
 	def paHipObjectsEdit(self, __HipObjectsObject, __folder="Shared"):
 		"""Edit an HIP Objects object"""
@@ -371,11 +373,13 @@ class policyObjects:
 
 	def paHipProfilesListHipProfiles(self, __folder="Shared"):
 		"""List all HipProfiles that are defined."""
+		output = None
 		if self.checkTokenStillValid():
 			paHipProfiles = saseApi.saseApi(self.prismaAccessObject.hipProfilesUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paHipProfiles.paList(__folder)
+			output = paHipProfiles.paList(__folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
+		return output
 
 	def paHipProfilesCreate(self, __HipProfilesObject, __folder="Shared"):
 		"""Create an HipProfiles object"""

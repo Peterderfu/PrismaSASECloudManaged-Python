@@ -1,4 +1,4 @@
-import requests
+import requests,json
 
 class saseApi:
 	"""saseApi class"""
@@ -47,7 +47,7 @@ class saseApi:
 		
 		__responseStatusCode = __response.status_code
 		__response = __response.json()
-
+		__jsonObject = json.loads(__jsonObject)
 		match __responseStatusCode:
 			case 404:
 				print(f"jsonobject = {__jsonObject}")
@@ -61,7 +61,7 @@ class saseApi:
 				print("Not sure how to interpret response.")
 				print(f"Response Status Code - {__responseStatusCode}")
 				print(f"json response = {__response}")
-
+		return __responseStatusCode
 	def paEdit(self, __jsonObject, __folder="Shared"):
 		"""
 		This will edit an existing object (by default in Shared)
