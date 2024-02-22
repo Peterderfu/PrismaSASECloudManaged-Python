@@ -17,7 +17,7 @@ def prismaAccessConnect(secret):
 ## List all HIP Objects
 def ListHipObjects(conn):
     o = policyObjects.policyObjects(conn)
-    return o.paHipObjectsListHipObjects()
+    return o.paHipObjectsListHipObjects().paList()
 
 ## List all local users
 def ListLocalUsers(conn):
@@ -55,9 +55,69 @@ def getPrismaAccessConn():
     secret = get_secret_value_response['SecretString']
     conn = prismaAccessConnect(json.loads(secret))
     return conn
+def CreateHIPObject(conn,registration):
+    OS_map = {
+        "Windows":"Microsoft",
+        "macOS":"Apple",
+        "iOS":"Apple",
+        "Android":"Google",
+        "Chrome":"Google",
+        "Linux":"Linux"
+    }
+    hipObject = json.dumps({
+        "name": registration['User'] + " device",
+        "host-info": {
+            "criteria": {
+                "host-id": {
+                    "is": registration['ID']
+                },
+                "os": {
+                    "contains": {OS_map[registration['OS']]: "All"}
+                }
+            }
+        },
+    })
+    o = policyObjects.policyObjects(conn)
+    # respHipObjectsCreate = o.paHipObjectsCreate(hipObject)
+    # if not (respHipObjectsCreate == 201):
+    #     print("Failed to create HIP object")
+    #     exit()
+
+    respHipProfilesListHipProfiles = o.paHipProfilesListHipProfiles('Mobile Users')
+    pass
+def RegisterUserDevice(conn,registration):
+    try:
+        user      = registration['User']
+        OS        = registration['OS']
+        device_ID = registration['ID']
+    except:
+        print('Invalid input registration info')
+    output = {'status':'','info':''}
+    ho = ListHipObjects(conn)
+    
+    if len(ho['data']) > 0:
+        for d in ho['data']:
+            try:
+                if d['host_info']['criteria']['host_id']['is'] == device_ID:
+                    output = {'status':'Device ID existed','info':'Device ID : ' + device_ID}    
+                    return output # there is device registry existing in Prisma Access
+            except KeyError:
+                pass
+        
+        # there is no device registry existing in Prisma Access and start to do registration
+        # step 1: add HIP object
+        o = CreateHIPObject(conn,registration)
+        # step 2: add HIP profile by adding HIP object
+        # step 3: add security policy including HIP profile
+        # step 4: push config
+
+    return output        
 
 if __name__ == '__main__':
     conn = getPrismaAccessConn()
     # # -----------------------------------
-    output = ListLocalUsers(conn)
+    # output = ListLocalUsers(conn)
+    reg = {'User':'peter3','OS':'Windows','ID':'testtetetetsesewwwwwwwww'}
+
+    output = RegisterUserDevice(conn, reg)
     print(output)
