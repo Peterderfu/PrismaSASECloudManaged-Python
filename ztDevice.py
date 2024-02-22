@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 from auth import saseAuthentication
 from access import prismaAccess,policyObjects,identityServices,configurationManagement
 
+PRISMA_ACCESS_RESP_OK = 201
 
 #API connection to Prisma Access setup
 # def prismaAccessConnect(tokenPath):
@@ -55,7 +56,7 @@ def getPrismaAccessConn():
     secret = get_secret_value_response['SecretString']
     conn = prismaAccessConnect(json.loads(secret))
     return conn
-def CreateHIPObject(conn,registration):
+def setHIPObject(registration):
     OS_map = {
         "Windows":"Microsoft",
         "macOS":"Apple",
@@ -64,7 +65,7 @@ def CreateHIPObject(conn,registration):
         "Chrome":"Google",
         "Linux":"Linux"
     }
-    hipObject = json.dumps({
+    output = json.dumps({
         "name": registration['User'] + " device",
         "host-info": {
             "criteria": {
@@ -77,14 +78,19 @@ def CreateHIPObject(conn,registration):
             }
         },
     })
+    return output
+
+def CreateHIPObject(conn,registration):
+    
     o = policyObjects.policyObjects(conn)
     # respHipObjectsCreate = o.paHipObjectsCreate(hipObject)
-    # if not (respHipObjectsCreate == 201):
+    # if not (respHipObjectsCreate == PRISMA_ACCESS_RESP_OK):
     #     print("Failed to create HIP object")
     #     exit()
 
     respHipProfilesListHipProfiles = o.paHipProfilesListHipProfiles('Mobile Users')
-    pass
+    if (respHipProfilesListHipProfiles == PRISMA_ACCESS_RESP_OK):
+        pass
 def RegisterUserDevice(conn,registration):
     try:
         user      = registration['User']
@@ -116,8 +122,8 @@ def RegisterUserDevice(conn,registration):
 if __name__ == '__main__':
     conn = getPrismaAccessConn()
     # # -----------------------------------
-    # output = ListLocalUsers(conn)
+    output = ListLocalUsers(conn)
     reg = {'User':'peter3','OS':'Windows','ID':'testtetetetsesewwwwwwwww'}
 
-    output = RegisterUserDevice(conn, reg)
+    # output = RegisterUserDevice(conn, reg)
     print(output)
