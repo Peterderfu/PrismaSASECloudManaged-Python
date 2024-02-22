@@ -16,9 +16,14 @@ def prismaAccessConnect(secret):
     return prismaAccess.prismaAccess(p.saseToken)
 
 ## List all HIP Objects
-def ListHipObjects(conn):
+def ListHipObjects(conn,folder):
     o = policyObjects.policyObjects(conn)
-    return o.paHipObjectsListHipObjects().paList()
+    return o.paHipObjectsListHipObjects(folder)
+
+## List all HIP Profiles
+def ListHipProfiles(conn,folder):
+    o = policyObjects.policyObjects(conn)
+    return o.paHipProfilesListHipProfiles(folder)
 
 ## List all local users
 def ListLocalUsers(conn):
@@ -33,6 +38,11 @@ def LockLocalUsers(conn,payload):
 def PushConfig(conn,payload):
     o = configurationManagement.configurationManagement(conn)
     return o.paConfigPush(payload)
+## List candidate configuration
+def ListCandidateCondig(conn):
+    o = configurationManagement.configurationManagement(conn)
+    return o.paCandidateConfigList()
+
 def getPrismaAccessConn():
     secret_name = "Prisma-Access"
     region_name = "us-east-1"
@@ -56,7 +66,9 @@ def getPrismaAccessConn():
     secret = get_secret_value_response['SecretString']
     conn = prismaAccessConnect(json.loads(secret))
     return conn
-def setHIPObject(registration):
+def setHIPObject(conn,registration):
+    #get a HIP object template pre-defined in Prisma Access portal and modify it for new HIP object 
+    output = getHIPObjectGPTemplate(conn)
     OS_map = {
         "Windows":"Microsoft",
         "macOS":"Apple",
@@ -65,31 +77,35 @@ def setHIPObject(registration):
         "Chrome":"Google",
         "Linux":"Linux"
     }
-    output = json.dumps({
-        "name": registration['User'] + " device",
-        "host-info": {
-            "criteria": {
-                "host-id": {
-                    "is": registration['ID']
-                },
-                "os": {
-                    "contains": {OS_map[registration['OS']]: "All"}
-                }
-            }
-        },
-    })
+    
+    output['name'] = registration['User'] + " device"
+    output['host_info']['criteria']['os']['contains'] = {OS_map[registration['OS']]: "All"}
+    output['host_info']['criteria']['host_id']['is'] = registration['ID']
+    return output
+
+def setHIPProfile(conn,objectName):
+    #get a HIP profile template pre-defined in Prisma Access portal and modify it for new HIP profile 
+    output = getHIPProfileGPTemplate(conn)
+    
+    output['name'] = "is-" + objectName
+    output['match'] = "'" + objectName + "'"
     return output
 
 def CreateHIPObject(conn,registration):
-    
     o = policyObjects.policyObjects(conn)
-    # respHipObjectsCreate = o.paHipObjectsCreate(hipObject)
-    # if not (respHipObjectsCreate == PRISMA_ACCESS_RESP_OK):
-    #     print("Failed to create HIP object")
-    #     exit()
+    hipObject = setHIPObject(conn,registration)
+    resp = o.paHipObjectsCreate(hipObject)
+    if not (resp == PRISMA_ACCESS_RESP_OK):
+        print("Failed to create HIP object")
+        exit()
+    return hipObject['name']
 
-    respHipProfilesListHipProfiles = o.paHipProfilesListHipProfiles('Mobile Users')
-    if (respHipProfilesListHipProfiles == PRISMA_ACCESS_RESP_OK):
+def CreateHIPProfile(conn,objectName):
+    o = policyObjects.policyObjects(conn)
+    profileObject = setHIPProfile(conn,objectName)
+
+    resp = o.paHipProfilesCreate(profileObject)
+    if (resp == PRISMA_ACCESS_RESP_OK):
         pass
 def RegisterUserDevice(conn,registration):
     try:
@@ -99,31 +115,65 @@ def RegisterUserDevice(conn,registration):
     except:
         print('Invalid input registration info')
     output = {'status':'','info':''}
-    ho = ListHipObjects(conn)
+    ho = ListHipObjects(conn,"Mobile Users")
     
     if len(ho['data']) > 0:
-        for d in ho['data']:
+        for d in ho['data']:  #check device identical to input registration info
             try:
                 if d['host_info']['criteria']['host_id']['is'] == device_ID:
-                    output = {'status':'Device ID existed','info':'Device ID : ' + device_ID}    
+                    output = {'status':'Device ID existing','info':'Device ID : ' + device_ID}    
                     return output # there is device registry existing in Prisma Access
             except KeyError:
                 pass
         
         # there is no device registry existing in Prisma Access and start to do registration
         # step 1: add HIP object
-        o = CreateHIPObject(conn,registration)
+        objectName = CreateHIPObject(conn,registration)
         # step 2: add HIP profile by adding HIP object
+        profileName = CreateHIPProfile(conn,objectName)
         # step 3: add security policy including HIP profile
+        # CreateSecurityPolicy(conn,objectName,profileName)
         # step 4: push config
 
-    return output        
+    return output
+# def CreateSecurityPolicy():
+
+def getHIPObjectGPTemplate(conn,objectName="HIP_OBJECT_GP_TEMPLATE"):
+    output = None
+    ho = ListHipObjects(conn,folder="Mobile Users")
+    
+    if len(ho['data']) > 0:
+        for d in ho['data']:
+            if d['name'] == objectName:
+                d['name'] = ''
+                d['description'] = ''
+                del d['id']
+                output = d
+                break
+    return output
+
+def getHIPProfileGPTemplate(conn,objectName="HIP_PROFILE_GP_TEMPLATE"):
+    output = None
+    ho = ListHipProfiles(conn,folder="Mobile Users")
+    
+    if len(ho['data']) > 0:
+        for d in ho['data']:
+            if d['name'] == objectName:
+                d['name'] = ''
+                d['description'] = ''
+                del d['id']
+                output = d
+                break
+    return output
+                
+    
+
 
 if __name__ == '__main__':
     conn = getPrismaAccessConn()
     # # -----------------------------------
-    output = ListLocalUsers(conn)
-    reg = {'User':'peter3','OS':'Windows','ID':'testtetetetsesewwwwwwwww'}
-
-    # output = RegisterUserDevice(conn, reg)
-    print(output)
+    # output = ListLocalUsers(conn)
+    
+    reg = {'User':'peter2223','OS':'Windows','ID':'2537edb1-3a2e-4281-a2b6-bf367f46415c'}
+    output = RegisterUserDevice(conn, reg)
+    # print(output)
