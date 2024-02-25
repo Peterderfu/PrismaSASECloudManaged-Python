@@ -14,6 +14,24 @@ class policyObjects:
 		tokenValid = bool(rightNow < self.prismaAccessObject.saseToken['expiresOn'])
 		return tokenValid
 
+	def paSecurityPolicyListSecurityPolicy(self, __folder="Shared"):
+		output = None
+		if self.checkTokenStillValid():
+			paSecurityPolicy = saseApi.saseApi(self.prismaAccessObject.securityRulesUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
+			output = paSecurityPolicy.paList(__folder)
+		else:
+			print("Please request new token and create new prismaAccess object.")
+		return output
+	
+	def paSecurityPolicyCreate(self, __securityPolicyObject, __folder="Shared"):
+		output = None
+		if self.checkTokenStillValid():
+			paSecurityPolicy = saseApi.saseApi(self.prismaAccessObject.securityRulesUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
+			output = paSecurityPolicy.paCreate(__securityPolicyObject, {"folder":__folder})
+		else:
+			print("Please request new token and create new prismaAccess object.")
+		return output
+	
 	def paAddressesListAddresses(self, __folder="Shared"):
 		if self.checkTokenStillValid():
 			paAddresses = saseApi.saseApi(self.prismaAccessObject.addressesUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
@@ -339,18 +357,20 @@ class policyObjects:
 
 	def paHipObjectsListHipObjects(self, __folder="Shared"):
 		"""List all HIP Objects that are defined."""
+		output = None
 		if self.checkTokenStillValid():
 			paHipObjects = saseApi.saseApi(self.prismaAccessObject.hipObjectsUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paHipObjects.paList(__folder)
+			output = paHipObjects.paList(__folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
-		return paHipObjects
+		return output
 
 	def paHipObjectsCreate(self, __HipObjectsObject, __folder="Shared"):
 		"""Create an HIP Objects object"""
+		output = None
 		if self.checkTokenStillValid():
 			paHipObjects = saseApi.saseApi(self.prismaAccessObject.hipObjectsUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			output = paHipObjects.paCreate(__HipObjectsObject, __folder)
+			output = paHipObjects.paCreate(__HipObjectsObject,{"folder":__HipObjectsObject['folder']})
 		else:
 			print("Please request new token and create new prismaAccess object.")
 		return output
@@ -365,11 +385,13 @@ class policyObjects:
 
 	def paHipObjectsDelete(self, __HipObjectsObject, __folder="Shared"):
 		"""Delete an HIP Objects object"""
+		output = None
 		if self.checkTokenStillValid():
 			paHipObjects = saseApi.saseApi(self.prismaAccessObject.hipObjectsUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paHipObjects.paDelete(__HipObjectsObject, __folder)
+			output = paHipObjects.paDelete(__HipObjectsObject, __folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
+		return output
 
 	def paHipProfilesListHipProfiles(self, __folder="Shared"):
 		"""List all HipProfiles that are defined."""
@@ -383,12 +405,14 @@ class policyObjects:
 
 	def paHipProfilesCreate(self, __HipProfilesObject, __folder="Shared"):
 		"""Create an HipProfiles object"""
+		output = None
 		if self.checkTokenStillValid():
 			paHipProfiles = saseApi.saseApi(self.prismaAccessObject.hipProfilesUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paHipProfiles.paCreate(__HipProfilesObject, __folder)
+			output = paHipProfiles.paCreate(__HipProfilesObject, {"folder":__HipProfilesObject['folder']})
 		else:
 			print("Please request new token and create new prismaAccess object.")
-
+		return output
+	
 	def paHipProfilesEdit(self, __HipProfilesObject, __folder="Shared"):
 		"""Edit an HipProfiles object"""
 		if self.checkTokenStillValid():
@@ -399,12 +423,13 @@ class policyObjects:
 
 	def paHipProfilesDelete(self, __HipProfilesObject, __folder="Shared"):
 		"""Delete an HipProfiles object"""
+		output = None
 		if self.checkTokenStillValid():
 			paHipProfiles = saseApi.saseApi(self.prismaAccessObject.hipProfilesUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paHipProfiles.paDelete(__HipProfilesObject, __folder)
+			output = paHipProfiles.paDelete(__HipProfilesObject, __folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
-
+		return output
 	def paExternalDynamicListsListExternalDynamicLists(self, __folder="Shared"):
 		"""List all ExternalDynamicLists that are defined."""
 		if self.checkTokenStillValid():

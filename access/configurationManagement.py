@@ -21,6 +21,15 @@ class configurationManagement:
 		else:
 			print("Please request new token and create new prismaAccess object.")
 		return output
+	def paCandidateConfigList(self,__folder="Shared"):
+		output = None
+		if self.checkTokenStillValid():
+			api = saseApi.saseApi(self.prismaAccessObject.configurationManagementUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
+			output = api.paList(__folder)
+		else:
+			print("Please request new token and create new prismaAccess object.")
+		return output
+
 	def __init__(self, __prismaAccessObject):
 		"""configurationManagement class initialization"""
 		self.prismaAccessObject = __prismaAccessObject

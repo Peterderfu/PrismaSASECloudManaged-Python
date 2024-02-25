@@ -80,7 +80,7 @@ class prismaAccess:
 		#self.fileBlockingProfilesUri = self.saseApi + __configV1 + "file-blocking-profiles"
 		#self.httpHeaderProfilesUri = self.saseApi + __configV1 + "http-header-profiles"
 		#self.profileGroupsUri = self.saseApi + __configV1 + "profile-groups"
-		#self.securityRulesUri = self.saseApi + __configV1 + "security-rules"
+		self.securityRulesUri = self.saseApi + __configV1 + "security-rules"
 		#self.urlAccessProfilesUri = self.saseApi + __configV1 + "url-access-profiles"
 		#self.vulnerabilityProtectProfilesUri = self.saseApi + __configV1 + "vulnerability-protection-profiles"
 		#self.vulnerabilityProtectSignaturesUri = self.saseApi + __configV1 + "vulnerability-protection-signatures"

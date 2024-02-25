@@ -37,17 +37,19 @@ class saseApi:
 			print(__response)
 		return __response
 
-	def paCreate(self, __jsonObject, __folder="Shared"):
+	# def paCreate(self, __jsonObject, __folder="Shared"):
+	def paCreate(self, __jsonObject, __params):
 		"""
 		This will create an object (by default in Shared)
 		"""
-		__params = { "folder": __folder }
+		# __params = { "folder": __folder }
+		__folder = __params["folder"]
 		# __response = requests.post(url=self.saseUri, headers=self.saseAuthHeaders, json=__jsonObject, params=__params)
-		__response = requests.request("POST",url=self.saseUri, headers=self.saseAuthHeaders, data=__jsonObject, params=__params)
+		__response = requests.request("POST",url=self.saseUri, headers=self.saseAuthHeaders, json=__jsonObject, params=__params)
 		
 		__responseStatusCode = __response.status_code
 		__response = __response.json()
-		__jsonObject = json.loads(__jsonObject)
+		__jsonObject = json.dumps(__jsonObject)
 		match __responseStatusCode:
 			case 404:
 				print(f"jsonobject = {__jsonObject}")
@@ -56,7 +58,7 @@ class saseApi:
 			case 400:
 				print("400 - Bad request. Malformed payload.")
 			case 201:
-				print(f"201 - Object {__jsonObject['name']} created in folder {__folder}.")
+				print(f"201 - Object {__jsonObject} created in folder {__folder}.")
 			case _:
 				print("Not sure how to interpret response.")
 				print(f"Response Status Code - {__responseStatusCode}")
@@ -120,6 +122,7 @@ class saseApi:
 		"""
 		myList = self.paList(__folder,False)
 		myObjectId = ""
+		output = None
 		if 'data' in myList:
 			# Let's go and find the address ID
 			for item in myList['data']:
@@ -153,12 +156,14 @@ class saseApi:
 					print("400 - Bad request. Malformed payload.")
 				case 200:
 					print(f"200 - Object {__jsonObject['name']} deleted in folder {__folder}.")
+					output = __jsonObject['name']
 				case _:
 					print("Not sure how to interpret response.")
 					print(f"Response Status Code - {__responseStatusCode}")
 					print(f"json response = {__response}")
 		else:
 			print(f"Unable to find object ID in {__folder}.")
+		return output
 
 	def __init__(self, __saseApi, __saseToken, __saseContentType, __saseAuthHeaders):
 		"""saseApi Class Initilization"""
