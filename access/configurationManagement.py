@@ -13,11 +13,11 @@ class configurationManagement:
 		rightNow = datetime.now()
 		tokenValid = bool(rightNow < self.prismaAccessObject.saseToken['expiresOn'])
 		return tokenValid
-	def paConfigPush(self,__configPushObject,__folder="Shared"):
+	def paConfigPush(self,__configPushObject):
 		output = None
 		if self.checkTokenStillValid():
 			api = saseApi.saseApi(self.prismaAccessObject.configPushUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			output = api.paCreate(__configPushObject, __folder)
+			output = api.paCreate(__configPushObject,{})
 		else:
 			print("Please request new token and create new prismaAccess object.")
 		return output
@@ -25,6 +25,14 @@ class configurationManagement:
 		output = None
 		if self.checkTokenStillValid():
 			api = saseApi.saseApi(self.prismaAccessObject.configurationManagementUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
+			output = api.paList(__folder)
+		else:
+			print("Please request new token and create new prismaAccess object.")
+		return output
+	def paConfigJobsListById(self,jobID,__folder="Shared"):
+		output = None
+		if self.checkTokenStillValid():
+			api = saseApi.saseApi(self.prismaAccessObject.configJobsListUri + "/" + jobID, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
 			output = api.paList(__folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")

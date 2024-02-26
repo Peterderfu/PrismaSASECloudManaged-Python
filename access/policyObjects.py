@@ -32,6 +32,29 @@ class policyObjects:
 			print("Please request new token and create new prismaAccess object.")
 		return output
 	
+
+
+	def paSecurityPolicyDelete(self, __securityPolicyObject, __folder="Shared"):
+		"""Delete an Security policy"""
+		output = None
+		if self.checkTokenStillValid():
+			paHipProfiles = saseApi.saseApi(self.prismaAccessObject.securityRulesUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
+			output = paHipProfiles.paDelete(__securityPolicyObject, __folder)
+		else:
+			print("Please request new token and create new prismaAccess object.")
+		return output
+	
+	def paSecurityPolicyMoveTop(self, __securityPolicyId, __folder="Shared"):
+		output = None
+		if self.checkTokenStillValid():
+			paSecurityPolicy = saseApi.saseApi(self.prismaAccessObject.securityRulesUri + "/" + __securityPolicyId + ":move", self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
+			output = paSecurityPolicy.paCreate({"destination":"top","rulebase":"pre"}, {"folder":__folder})
+		else:
+			print("Please request new token and create new prismaAccess object.")
+		return output
+	
+
+
 	def paAddressesListAddresses(self, __folder="Shared"):
 		if self.checkTokenStillValid():
 			paAddresses = saseApi.saseApi(self.prismaAccessObject.addressesUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)

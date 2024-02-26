@@ -12,25 +12,26 @@ class saseApi:
 		__response = requests.get(url=self.saseUri, headers=self.saseAuthHeaders, params=__params)
 		__response = __response.json()
 
-		if __response["total"] > self.saseLimit:
-			# There are more than self.saseLimit (default: 200) objects retrieved. We need to get through the entire list.
-			numRecords = 0
+		if "total" in __response:
+			if __response["total"] > self.saseLimit:
+				# There are more than self.saseLimit (default: 200) objects retrieved. We need to get through the entire list.
+				numRecords = 0
 
-			while numRecords < __response["total"]:
-				"""
-				Perform all API queries until we've retrieved all objects.
-				"""
-				numRecords = len(__response["data"])
+				while numRecords < __response["total"]:
+					"""
+					Perform all API queries until we've retrieved all objects.
+					"""
+					numRecords = len(__response["data"])
 
-				# Update the offset to reflect the number of records already retrieved.
-				__params2 = { "folder": __folder, "offset": numRecords, "limit": self.saseLimit }
+					# Update the offset to reflect the number of records already retrieved.
+					__params2 = { "folder": __folder, "offset": numRecords, "limit": self.saseLimit }
 
-				__response2 = requests.get(url=self.saseUri, headers=self.saseAuthHeaders, params=__params2)
-				__response2 = __response2.json()
+					__response2 = requests.get(url=self.saseUri, headers=self.saseAuthHeaders, params=__params2)
+					__response2 = __response2.json()
 
-				if "data" in __response2:
-					# Append the next batch of application objects to the original data object that we retrieved from __response.
-					__response["data"] = [*__response["data"], *(__response2["data"])]
+					if "data" in __response2:
+						# Append the next batch of application objects to the original data object that we retrieved from __response.
+						__response["data"] = [*__response["data"], *(__response2["data"])]
 
 		if __displayOutput:
 			# We need to display the output to stdout.
@@ -43,7 +44,8 @@ class saseApi:
 		This will create an object (by default in Shared)
 		"""
 		# __params = { "folder": __folder }
-		__folder = __params["folder"]
+		if not (__params == {}):
+			__folder = __params["folder"]
 		# __response = requests.post(url=self.saseUri, headers=self.saseAuthHeaders, json=__jsonObject, params=__params)
 		__response = requests.request("POST",url=self.saseUri, headers=self.saseAuthHeaders, json=__jsonObject, params=__params)
 		
@@ -63,7 +65,8 @@ class saseApi:
 				print("Not sure how to interpret response.")
 				print(f"Response Status Code - {__responseStatusCode}")
 				print(f"json response = {__response}")
-		return __responseStatusCode
+		# return __responseStatusCode
+		return {"code":__responseStatusCode,"resp":__response}
 	def paEdit(self, __jsonObject, __folder="Shared"):
 		"""
 		This will edit an existing object (by default in Shared)
@@ -127,7 +130,8 @@ class saseApi:
 			# Let's go and find the address ID
 			for item in myList['data']:
 				if (__folder != "Service Connections") or (__folder != "Remote Networks"):
-					if item['name'] == __jsonObject['name'] and item['folder'] == __folder:
+					# if item['name'] == __jsonObject['name'] and item['folder'] == __folder:
+					if item['name'] == __jsonObject['name']:
 						myObjectId = item['id']
 						break
 				else:

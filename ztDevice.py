@@ -1,12 +1,12 @@
-import sys,os,json
+import sys,os,json,time
 sys.path.append(os.getcwd()) # add current path to system environment
 import boto3
 from botocore.exceptions import ClientError
 from auth import saseAuthentication
 from access import prismaAccess,policyObjects,identityServices,configurationManagement
 
-PRISMA_ACCESS_RESP_OK = 201
-
+PRISMA_ACCESS_RESP_OK = [200,201]
+MOBILE_USERS = "Mobile Users"
 #API connection to Prisma Access setup
 # def prismaAccessConnect(tokenPath):
 def prismaAccessConnect(secret):
@@ -84,7 +84,7 @@ def setHIPObject(conn,registration):
         "Linux":"Linux"
     }
     
-    output['name'] = registration['User'] + " device"
+    output['name'] = registration['User'] + "_object"
     output['host_info']['criteria']['os']['contains'] = {OS_map[registration['OS']]: "All"}
     output['host_info']['criteria']['host_id']['is'] = registration['ID']
     return output
@@ -93,7 +93,7 @@ def setHIPProfile(conn,objectName):
     #get a HIP profile template pre-defined in Prisma Access portal and modify it for new HIP profile 
     output = getHIPProfileGPTemplate(conn)
     
-    output['name'] = "is-" + objectName
+    output['name'] = getHIPProfileName(objectName)
     output['match'] = "'" + objectName + "'"
     return output
 
@@ -101,10 +101,10 @@ def setSecurityPolicy(conn,policy):
     #get a HIP security profile pre-defined in Prisma Access portal and modify it for new security profile
     output = getSecurityPolicyGPTemplate(conn)
     output['name'] = policy['name']
-    output['source_user'] = policy['source_user']
-    output['source_hip'] = policy['source_hip']
-    output['destination'] = policy['destination']
-    output['disable'] = False
+    output['source_user'] = [policy['source_user']]
+    output['source_hip'] = [policy['source_hip']]
+    output['destination'] = [policy['destination']]
+    output['disabled'] = False
     return output
 
 def CreateHIPObject(conn,registration):
@@ -112,7 +112,7 @@ def CreateHIPObject(conn,registration):
     o = policyObjects.policyObjects(conn)
     hipObject = setHIPObject(conn,registration)
     resp = o.paHipObjectsCreate(hipObject)
-    if not (resp == PRISMA_ACCESS_RESP_OK):
+    if not (resp['code'] in PRISMA_ACCESS_RESP_OK):
         print("Failed to create HIP object")
         exit()
     return hipObject['name']
@@ -123,19 +123,40 @@ def CreateHIPProfile(conn,objectName):
     profileObject = setHIPProfile(conn,objectName)
 
     resp = o.paHipProfilesCreate(profileObject)
-    if not (resp == PRISMA_ACCESS_RESP_OK):
+    if not (resp['code'] in PRISMA_ACCESS_RESP_OK):
         print("Failed to create HIP profile")
         exit()
     return profileObject['name']
 
 def CreateSecurityPolicy(conn,policy):
+    output = None
     o = policyObjects.policyObjects(conn)
     secuirtyPolicy = setSecurityPolicy(conn,policy)
-    resp = o.paSecurityPolicyCreate(secuirtyPolicy,"Mobile Users")
-    if (resp == PRISMA_ACCESS_RESP_OK):
-        pass
+
+    resp = o.paSecurityPolicyCreate(secuirtyPolicy,MOBILE_USERS)
+    if (resp['code'] in PRISMA_ACCESS_RESP_OK):
+        policies = o.paSecurityPolicyListSecurityPolicy(MOBILE_USERS)
+        if len(policies) > 0:
+            for d in policies['data']:  
+                if d['name'] == secuirtyPolicy['name']: # Move the policy to top
+                    o.paSecurityPolicyMoveTop(d['id'],MOBILE_USERS)
+                    output = secuirtyPolicy['name']
+    return output
 
 def RegisterUserDevice(conn,registration):
+# Device ID type
+#   Windows 
+#       —Machine GUID stored in the Windows registry (HKEY_Local_Machine\Software\Microsoft\Cryptography\MachineGuid) 
+#   macOS 
+#       —MAC address of the first built-in physical network interface 
+#   Android 
+#       —Android ID 
+#   iOS 
+#       —UDID 
+#   Linux 
+#       —Product UUID retrieved from the system DMI table 
+#   Chrome 
+#       —GlobalProtect-assigned unique alphanumeric string with length of 32 characters 
     try:
         user            = registration['User']
         OS              = registration['OS']
@@ -144,7 +165,7 @@ def RegisterUserDevice(conn,registration):
     except:
         print('Invalid input registration info')
     output = {'status':'','info':''}
-    ho = ListHipObjects(conn,"Mobile Users")
+    ho = ListHipObjects(conn,MOBILE_USERS)
     
     if len(ho['data']) > 0:
         for d in ho['data']:  #check device identical to input registration info
@@ -162,36 +183,35 @@ def RegisterUserDevice(conn,registration):
         profileName = CreateHIPProfile(conn,objectName)
         # step 3: add security policy including HIP profile
         policy = {
-                "name":"Allow_" + user + "_" + objectName,
+                "name": getSecurityPolicyName(profileName),
                 "source_user": user,
                 "source_hip": profileName,
                 "destination": destination
             }
-    
+        
         securityPolicy = CreateSecurityPolicy(conn,policy)
         # step 4: push config
-        pass
-
+        pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
     return output
 
 
 def getHIPObjectGPTemplate(conn,objectName="HIP_OBJECT_GP_TEMPLATE"):
     output = None
-    ho = ListHipObjects(conn,folder="Mobile Users")
+    ho = ListHipObjects(conn,folder=MOBILE_USERS)
     
     if len(ho['data']) > 0:
         for d in ho['data']:
             if d['name'] == objectName:
                 d['name'] = ''
                 d['description'] = ''
-                del d['id']
+                del d['id'] 
                 output = d
                 break
     return output
 
 def getHIPProfileGPTemplate(conn,objectName="HIP_PROFILE_GP_TEMPLATE"):
     output = None
-    ho = ListHipProfiles(conn,folder="Mobile Users")
+    ho = ListHipProfiles(conn,folder=MOBILE_USERS)
     
     if len(ho['data']) > 0:
         for d in ho['data']:
@@ -205,7 +225,7 @@ def getHIPProfileGPTemplate(conn,objectName="HIP_PROFILE_GP_TEMPLATE"):
 
 def getSecurityPolicyGPTemplate(conn,objectName="SECURITY_POLICY_GP_TEMPLATE"):                
     output = None
-    so = ListSecurityPolicy(conn,folder="Mobile Users")
+    so = ListSecurityPolicy(conn,folder=MOBILE_USERS)
     if len(so['data']) > 0:
         for d in so['data']:
             if d['name'] == objectName:
@@ -219,18 +239,32 @@ def DeleteHipObject(conn,object):
     output = o.paHipObjectsDelete(object,object['folder'])
     return output
 
-def DeleteHipProfile(conn,object):
+def DeleteHipProfile(conn,profile):
     output = None
     o = policyObjects.policyObjects(conn)
-    output = o.paHipProfilesDelete(object,object['folder'])
+    output = o.paHipProfilesDelete(profile,profile['folder'])
     return output
-
-def  DeleteUserDevice(conn,reg):
+def DeleteSecurityPolicy(conn,policy):
+    output = None
+    o = policyObjects.policyObjects(conn)
+    output = o.paSecurityPolicyDelete(policy,policy['folder'])
+    return output
+def DeleteUserDevice(conn,reg):
     device_ID = reg['ID']
     hipObjectToBeDeleted = None
     hipProfileToBeDeleted = None
-    o = ListHipObjects(conn,"Mobile Users")
-    
+    securityPolicyToBeDeleted = None
+    policyName = getSecurityPolicyName(getHIPProfileName(getHIPObjectName(reg['User'])))
+    o = ListSecurityPolicy(conn,MOBILE_USERS)
+    if len(o['data']) > 0:
+        for d in o['data']:  #check device identical to input registration info
+            if d['name'] == policyName:
+                securityPolicyToBeDeleted = d
+                securityPolicyToBeDeleted['folder'] = MOBILE_USERS
+                deletedSecurityPolicyName = DeleteSecurityPolicy(conn,securityPolicyToBeDeleted)
+                break
+
+    o = ListHipObjects(conn,MOBILE_USERS)
     if len(o['data']) > 0:
         for d in o['data']:  #check device identical to input registration info
             try:
@@ -242,7 +276,7 @@ def  DeleteUserDevice(conn,reg):
     if hipObjectToBeDeleted:
         deletedObjectName = DeleteHipObject(conn,hipObjectToBeDeleted)
         deletedObjectName = '\'' + deletedObjectName + '\''
-        o = ListHipProfiles(conn,"Mobile Users")
+        o = ListHipProfiles(conn,MOBILE_USERS)
         if len(o['data']) > 0:
             for d in o['data']:  #check device identical to input registration info
                 try:
@@ -251,24 +285,71 @@ def  DeleteUserDevice(conn,reg):
                         break
                 except KeyError:
                     pass
+    if hipProfileToBeDeleted:
         deletedProfileName = DeleteHipProfile(conn,hipProfileToBeDeleted)
     else:
         pass
     
+def getHIPObjectName(user):
+    return user + "_object"
+def getHIPProfileName(objectName):
+    return objectName + "_profile"
+def getSecurityPolicyName(profileName):
+    return "ALLOW_" + profileName
 
+def pushConfig(conn,configBody):
+    output = None
+    stage_first_OK = None
+    stage_second_OK = None
+    o = configurationManagement.configurationManagement(conn)
+    pushJobs = o.paConfigPush(configBody)
+    if not (pushJobs["code"] in PRISMA_ACCESS_RESP_OK):
+        print("Failed to push config")
+        exit()
+    job_id = int(pushJobs["resp"]["job_id"])
+    print("Push stage 1 --")
+    while (True):
+        jobs = o.paConfigJobsListById(str(job_id),MOBILE_USERS)
+        result_str = jobs["data"][0]["result_str"]
+        print(result_str)
+        match result_str:
+            case "PEND":
+                time.sleep(3)
+            case "OK":
+                stage_first_OK = True
+                job_id = job_id + 1
+                break
+            case _:
+                break
+    if stage_first_OK:
+        print("Push stage 2 --")
+        while (True):
+            jobs = o.paConfigJobsListById(str(job_id),MOBILE_USERS)
+            result_str = jobs["data"][0]["result_str"]
+            print(result_str)
+            match result_str:
+                case "PEND":
+                    time.sleep(3)
+                case "OK":
+                    stage_second_OK = True
+                    break
+                case _:
+                    break
+    output = stage_first_OK & stage_second_OK           
+    return output
 if __name__ == '__main__':
     conn = getPrismaAccessConn()
     # # -----------------------------------
     # output = ListLocalUsers(conn)
     
     reg = {
-            'User':'peter2223',
+            'User':'peter',
             'OS':'Windows',
             'ID':'2537edb1-3a2e-4281-a2b6-bf367f46415c',
-            'Destination':{'8.8.8.8'}
+            'Destination':'8.8.8.8'
            }
     
     DeleteUserDevice(conn,reg)
-
     output = RegisterUserDevice(conn, reg)
+    # pushConfig(conn,{"description":reg["User"],"folders":[MOBILE_USERS]})
     # print(output)

@@ -19,6 +19,7 @@ class prismaAccess:
 		# Configuration Management
 		self.configurationManagementUri = self.saseApi + __configV1 + "config-versions"
 		self.configPushUri = self.configurationManagementUri + "/candidate:push"
+		self.configJobsListUri = self.saseApi + __configV1 + "jobs"
 
 		# Identity Services
 		#self.authenticationPortalsUri = self.saseApi + __configV1 + "authentication-portals"
