@@ -347,8 +347,16 @@ def pushConfig(conn,configBody):
     else:
         print("Pushing configuration - FAIL")
     return output
-if __name__ == '__main__':
+def lambda_handler(event, context):
     conn = getPrismaAccessConn()
+    reg = event['reg']
+    DeleteUserDevice(conn,reg)
+    output = RegisterUserDevice(conn, reg)
+    # pushConfig(conn,{"description":reg["User"],"folders":[MOBILE_USERS]})
+    # print(output)
+
+if __name__ == '__main__':
+    
     # # -----------------------------------
     # output = ListLocalUsers(conn)
     
@@ -358,8 +366,7 @@ if __name__ == '__main__':
             'ID':'2537edb1-3a2e-4281-a2b6-bf367f46415c',
             'Destination':'8.8.8.8'
            }
+    event = {"reg":reg}
+    lambda_handler(event,{})
     
-    DeleteUserDevice(conn,reg)
-    output = RegisterUserDevice(conn, reg)
-    # pushConfig(conn,{"description":reg["User"],"folders":[MOBILE_USERS]})
-    # print(output)
+    
