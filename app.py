@@ -143,7 +143,8 @@ def CreateSecurityPolicy(conn,policy):
                     output = secuirtyPolicy['name']
     return output
 
-def RegisterUserDevice(conn,registration):
+# def RegisterUserDevice(conn,registration):
+def RegisterUserDevice(registration):
 # Device ID type
 #   Windows 
 #       —Machine GUID stored in the Windows registry (HKEY_Local_Machine\Software\Microsoft\Cryptography\MachineGuid) 
@@ -157,6 +158,7 @@ def RegisterUserDevice(conn,registration):
 #       —Product UUID retrieved from the system DMI table 
 #   Chrome 
 #       —GlobalProtect-assigned unique alphanumeric string with length of 32 characters 
+    conn = getPrismaAccessConn()
     try:
         user            = registration['User']
         OS              = registration['OS']
@@ -348,25 +350,32 @@ def pushConfig(conn,configBody):
         print("Pushing configuration - FAIL")
     return output
 def lambda_handler(event, context):
-    conn = getPrismaAccessConn()
-    reg = event['reg']
-    DeleteUserDevice(conn,reg)
-    output = RegisterUserDevice(conn, reg)
+    operation = event['operation']
+    operations = {
+        'register': RegisterUserDevice,
+        'list': ListLocalUsers
+    }
+    if operation in operations:
+        return operations[operation](event.get('payload'))
+    else:
+        raise ValueError('Unrecognized operation "{}"'.format(operation))
+    # conn = getPrismaAccessConn()
+
+    # reg = event['reg']
+    # DeleteUserDevice(conn,reg)
+    # output = RegisterUserDevice(conn, reg)
     # pushConfig(conn,{"description":reg["User"],"folders":[MOBILE_USERS]})
     # print(output)
 
-if __name__ == '__main__':
-    
+# if __name__ == '__main__':
     # # -----------------------------------
     # output = ListLocalUsers(conn)
     
-    reg = {
-            'User':'peter',
-            'OS':'Windows',
-            'ID':'2537edb1-3a2e-4281-a2b6-bf367f46415c',
-            'Destination':'8.8.8.8'
-           }
-    event = {"reg":reg}
-    lambda_handler(event,{})
-    
-    
+    # reg = {
+    #         'User':'peter',
+    #         'OS':'Windows',
+    #         'ID':'2537edb1-3a2e-4281-a2b6-bf367f46415c',
+    #         'Destination':'8.8.8.8'
+    #       }
+    # event = {"reg":reg}
+    # lambda_handler(event,{})
