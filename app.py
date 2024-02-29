@@ -7,6 +7,14 @@ from access import prismaAccess,policyObjects,identityServices,configurationMana
 
 PRISMA_ACCESS_RESP_OK = [200,201]
 MOBILE_USERS = "Mobile Users"
+
+def setResponse(statusCode,msg):
+    return {
+            "statusCode": statusCode,
+            "headers": {"Content-Type": "application/json"},
+            "isBase64Encoded": "false",
+            "body": "{msg:"+ msg + "}"
+            }    
 #API connection to Prisma Access setup
 # def prismaAccessConnect(tokenPath):
 def prismaAccessConnect(secret):
@@ -114,8 +122,9 @@ def CreateHIPObject(conn,registration):
     resp = o.paHipObjectsCreate(hipObject)
     if not (resp['code'] in PRISMA_ACCESS_RESP_OK):
         print("Failed to create HIP object")
-        exit()
-    return hipObject['name']
+        return output
+    output = hipObject['name']
+    return output
 
 def CreateHIPProfile(conn,objectName):
     output = None
@@ -125,9 +134,9 @@ def CreateHIPProfile(conn,objectName):
     resp = o.paHipProfilesCreate(profileObject)
     if not (resp['code'] in PRISMA_ACCESS_RESP_OK):
         print("Failed to create HIP profile")
-        exit()
-    return profileObject['name']
-
+        return output
+    output = profileObject['name']
+    return output
 def CreateSecurityPolicy(conn,policy):
     output = None
     o = policyObjects.policyObjects(conn)
@@ -158,6 +167,8 @@ def RegisterUserDevice(registration):
 #       —Product UUID retrieved from the system DMI table 
 #   Chrome 
 #       —GlobalProtect-assigned unique alphanumeric string with length of 32 characters 
+    print(registration)
+    response = None
     conn = getPrismaAccessConn()
     try:
         user            = registration['User']
@@ -165,24 +176,31 @@ def RegisterUserDevice(registration):
         device_ID       = registration['ID']
         destination     = registration['Destination']
     except:
-        print('Invalid input registration info')
-    output = {'status':'','info':''}
+        msg = 'Invalid input registration info'
+        response = setResponse(500,msg)
+        print(msg)
+        return response
     ho = ListHipObjects(conn,MOBILE_USERS)
     
     if len(ho['data']) > 0:
         for d in ho['data']:  #check device identical to input registration info
             try:
                 if d['host_info']['criteria']['host_id']['is'] == device_ID:
-                    output = {'status':'Device ID existing','info':'Device ID : ' + device_ID}    
-                    return output # there is device registry existing in Prisma Access
+                    msg = 'Device ID (' + device_ID + ') is already existing'
+                    response = setResponse(500,msg)
+                    return response # there is device registry existing in Prisma Access
             except KeyError:
                 pass
         
         # there is no device registry existing in Prisma Access and start to do registration
         # step 1: add HIP object
         objectName = CreateHIPObject(conn,registration)
+        if not objectName:
+            response = setResponse(500,"Failed to create HIP object")
         # step 2: add HIP profile by adding HIP object
         profileName = CreateHIPProfile(conn,objectName)
+        if not profileName:
+            response = setResponse(500,"Failed to create HIP profile")
         # step 3: add security policy including HIP profile
         policy = {
                 "name": getSecurityPolicyName(profileName),
@@ -190,11 +208,19 @@ def RegisterUserDevice(registration):
                 "source_hip": profileName,
                 "destination": destination
             }
-        
         securityPolicy = CreateSecurityPolicy(conn,policy)
+        if not securityPolicy:
+            response = setResponse(500,"Failed to create security policy")
+        
         # step 4: push config
-        pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
-    return output
+        pushResult = pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
+        if not pushResult:
+            response = setResponse(500,"Failedto push config")
+
+        # User and device creation successfully
+        if  (objectName and profileName and securityPolicy and pushResult):
+            response = setResponse(200,"OK")       
+    return response
 
 
 def getHIPObjectGPTemplate(conn,objectName="HIP_OBJECT_GP_TEMPLATE"):
@@ -350,6 +376,7 @@ def pushConfig(conn,configBody):
         print("Pushing configuration - FAIL")
     return output
 def lambda_handler(event, context):
+    print("----"+event)
     operation = event['operation']
     operations = {
         'register': RegisterUserDevice,
