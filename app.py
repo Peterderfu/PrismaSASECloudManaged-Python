@@ -13,8 +13,8 @@ def setResponse(statusCode,msg):
             "statusCode": statusCode,
             "headers": {"Content-Type": "application/json"},
             "isBase64Encoded": "false",
-            "body": "{msg:"+ msg + "}"
-            }    
+            "body": {"msg": msg }
+            }
 #API connection to Prisma Access setup
 # def prismaAccessConnect(tokenPath):
 def prismaAccessConnect(secret):
@@ -376,7 +376,8 @@ def pushConfig(conn,configBody):
         print("Pushing configuration - FAIL")
     return output
 def lambda_handler(event, context):
-    print("----"+event)
+    print("----")
+    print(event)
     operation = event['operation']
     operations = {
         'register': RegisterUserDevice,
