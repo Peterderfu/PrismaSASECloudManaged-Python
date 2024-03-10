@@ -94,7 +94,7 @@ def setHIPObject(conn,registration):
     
     output['name'] = registration['User'] + "_object"
     output['host_info']['criteria']['os']['contains'] = {OS_map[registration['OS']]: "All"}
-    output['host_info']['criteria']['host_id']['is'] = registration['ID']
+    output['host_info']['criteria']['host_id']['is'] = registration['Device']
     return output
 
 def setHIPProfile(conn,objectName):
@@ -152,75 +152,6 @@ def CreateSecurityPolicy(conn,policy):
                     output = secuirtyPolicy['name']
     return output
 
-# def RegisterUserDevice(conn,registration):
-def RegisterUserDevice(registration):
-# Device ID type
-#   Windows 
-#       —Machine GUID stored in the Windows registry (HKEY_Local_Machine\Software\Microsoft\Cryptography\MachineGuid) 
-#   macOS 
-#       —MAC address of the first built-in physical network interface 
-#   Android 
-#       —Android ID 
-#   iOS 
-#       —UDID 
-#   Linux 
-#       —Product UUID retrieved from the system DMI table 
-#   Chrome 
-#       —GlobalProtect-assigned unique alphanumeric string with length of 32 characters 
-    print(registration)
-    response = None
-    conn = getPrismaAccessConn()
-    try:
-        user            = registration['User']
-        OS              = registration['OS']
-        device_ID       = registration['ID']
-        destination     = registration['Destination']
-    except:
-        msg = 'Invalid input registration info'
-        response = setResponse(500,msg)
-        print(msg)
-        return response
-    ho = ListHipObjects(conn,MOBILE_USERS)
-    
-    if len(ho['data']) > 0:
-        for d in ho['data']:  #check device identical to input registration info
-            try:
-                if d['host_info']['criteria']['host_id']['is'] == device_ID:
-                    msg = 'Device ID (' + device_ID + ') is already existing'
-                    response = setResponse(500,msg)
-                    return response # there is device registry existing in Prisma Access
-            except KeyError:
-                pass
-        
-        # there is no device registry existing in Prisma Access and start to do registration
-        # step 1: add HIP object
-        objectName = CreateHIPObject(conn,registration)
-        if not objectName:
-            response = setResponse(500,"Failed to create HIP object")
-        # step 2: add HIP profile by adding HIP object
-        profileName = CreateHIPProfile(conn,objectName)
-        if not profileName:
-            response = setResponse(500,"Failed to create HIP profile")
-        # step 3: add security policy including HIP profile
-        policy = {
-                "name": getSecurityPolicyName(profileName),
-                "source_user": user,
-                "source_hip": profileName,
-                "destination": destination
-            }
-        securityPolicy = CreateSecurityPolicy(conn,policy)
-        if not securityPolicy:
-            response = setResponse(500,"Failed to create security policy")
-        
-        # step 4: push config
-        pushResult = pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
-        if not pushResult:
-            response = setResponse(500,"Failedto push config")
-
-        # User and device creation successfully
-        if  (objectName and profileName and securityPolicy and pushResult):
-            response = setResponse(200,"OK")       
-    return response
 
 
 def getHIPObjectGPTemplate(conn,objectName="HIP_OBJECT_GP_TEMPLATE"):
@@ -278,7 +209,7 @@ def DeleteSecurityPolicy(conn,policy):
     output = o.paSecurityPolicyDelete(policy,policy['folder'])
     return output
 def DeleteUserDevice(conn,reg):
-    device_ID = reg['ID']
+    device_ID = reg['Device']
     hipObjectToBeDeleted = None
     hipProfileToBeDeleted = None
     securityPolicyToBeDeleted = None
@@ -330,6 +261,7 @@ def pushConfig(conn,configBody):
     stage_first_OK = False
     stage_second_OK = False
     o = configurationManagement.configurationManagement(conn)
+    
     pushJobs = o.paConfigPush(configBody)
     if not (pushJobs["code"] in PRISMA_ACCESS_RESP_OK):
         print("Failed to push config")
@@ -372,12 +304,83 @@ def pushConfig(conn,configBody):
     output = stage_first_OK & stage_second_OK
     if output:
         print("Pushing configuration - OK")
+        response = setResponse(200,"OK")
     else:
         print("Pushing configuration - FAIL")
-    return output
+        response = setResponse(500,"Failed to push configuration")
+    return response
+
+def RegisterUserDevice(registration):
+# Device ID type
+#   Windows 
+#       —Machine GUID stored in the Windows registry (HKEY_Local_Machine\Software\Microsoft\Cryptography\MachineGuid) 
+#   macOS 
+#       —MAC address of the first built-in physical network interface 
+#   Android 
+#       —Android ID 
+#   iOS 
+#       —UDID 
+#   Linux 
+#       —Product UUID retrieved from the system DMI table 
+#   Chrome 
+#       —GlobalProtect-assigned unique alphanumeric string with length of 32 characters 
+    response = None
+    conn = getPrismaAccessConn()
+    registration['Destination'] = '8.8.8.8'
+    DeleteUserDevice(conn,registration)
+    try:
+        user            = registration['User']
+        OS              = registration['OS']
+        device_ID       = registration['Device']
+        destination     = registration['Destination']
+    except:
+        msg = 'Invalid input registration info'
+        response = setResponse(500,msg)
+        print(msg)
+        return response
+    ho = ListHipObjects(conn,MOBILE_USERS)
+    
+    if len(ho['data']) > 0:
+        for d in ho['data']:  #check device identical to input registration info
+            try:
+                if d['host_info']['criteria']['host_id']['is'] == device_ID:
+                    msg = 'Device ID (' + device_ID + ') is already existing'
+                    response = setResponse(500,msg)
+                    return response # there is device registry existing in Prisma Access
+            except KeyError:
+                pass
+        
+        # there is no device registry existing in Prisma Access and start to do registration
+        # step 1: add HIP object
+        objectName = CreateHIPObject(conn,registration)
+        if not objectName:
+            response = setResponse(500,"Failed to create HIP object")
+        # step 2: add HIP profile by adding HIP object
+        profileName = CreateHIPProfile(conn,objectName)
+        if not profileName:
+            response = setResponse(500,"Failed to create HIP profile")
+        # step 3: add security policy including HIP profile
+        policy = {
+                "name": getSecurityPolicyName(profileName),
+                "source_user": user,
+                "source_hip": profileName,
+                "destination": destination
+            }
+        securityPolicy = CreateSecurityPolicy(conn,policy)
+        if not securityPolicy:
+            response = setResponse(500,"Failed to create security policy")
+        
+        # step 4: push config
+        pushResult = pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
+        if not pushResult:
+            response = setResponse(500,"Failed to push config")
+
+        # User and device creation successfully
+        if  (objectName and profileName and securityPolicy and pushResult):
+            response = setResponse(200,"OK")       
+    return response
+
 def lambda_handler(event, context):
-    print("----")
-    print(event)
     operation = event['operation']
     operations = {
         'register': RegisterUserDevice,
