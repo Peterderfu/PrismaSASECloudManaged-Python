@@ -8,3 +8,5 @@ load-template.py
 =======
 *.pyc
 >>>>>>> e5025db229fb57c99700abfb9a435e3b6e458b4c
+*.txt
+tunnel_monitor

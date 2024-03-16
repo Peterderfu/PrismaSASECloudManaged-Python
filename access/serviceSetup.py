@@ -48,12 +48,14 @@ class serviceSetup:
 
 	def paIpsecTunnelsListIpsecTunnels(self, __folder="Service Connections"):
 		"""List all IPSec Tunnels that are defined."""
+		output = None
 		if self.checkTokenStillValid():
 			paIpsecTunnels = saseApi.saseApi(self.prismaAccessObject.ipsecTunnelsUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paIpsecTunnels.paList(__folder)
+			output = paIpsecTunnels.paList(__folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
-
+		return output
+	
 	def paIpsecTunnelsCreateIpsecTunnel(self, __ipsecTunnelObject, __folder="Service Connections"):
 		"""Create IPSec Tunnels"""
 		if self.checkTokenStillValid():
@@ -62,13 +64,15 @@ class serviceSetup:
 		else:
 			print("Please request new token and create new prismaAccess object.")
 
-	def paIpsecTunnelsEditIpsecTunnel(self, __ipsecTunnelObject, __folder="Service Connections"):
+	def paIpsecTunnelsEditIpsecTunnel(self,__ipsecTunnelObject, __folder="Service Connections"):
 		"""Edit IPSec Tunnel"""
+		output = None
 		if self.checkTokenStillValid():
 			paIpsecTunnels = saseApi.saseApi(self.prismaAccessObject.ipsecTunnelsUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paIpsecTunnels.paEdit(__ipsecTunnelObject, __folder)
+			output = paIpsecTunnels.paEdit(__ipsecTunnelObject, __folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
+		return output
 
 	def paIpsecTunnelsDeleteIpsecTunnel(self, __ipsecTunnelObject, __folder="Service Connections"):
 		"""Edit IPSec Tunnel"""
@@ -154,11 +158,23 @@ class serviceSetup:
 
 	def paRemoteNetworksListRemoteNetworks(self, __folder="Remote Networks"):
 		"""List all IKE Crypto Profiles that are defined."""
+		output = None
 		if self.checkTokenStillValid():
 			paRemoteNetworks = saseApi.saseApi(self.prismaAccessObject.remoteNetworksUri, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
-			paRemoteNetworks.paList(__folder)
+			output = paRemoteNetworks.paList(__folder)
 		else:
 			print("Please request new token and create new prismaAccess object.")
+		return output
+	
+	def paRemoteNetworksListRemoteNetwork(self, __remoteNetworkId, __folder="Remote Networks"):
+		output = None
+		if self.checkTokenStillValid():
+			paRemoteNetworks = saseApi.saseApi(self.prismaAccessObject.remoteNetworksUri + "/" + __remoteNetworkId, self.prismaAccessObject.saseToken, self.prismaAccessObject.contentType, self.prismaAccessObject.saseAuthHeaders)
+			output = paRemoteNetworks.paList(__folder)
+		else:
+			print("Please request new token and create new prismaAccess object.")
+		return output
+	
 
 	def paRemoteNetworksCreateRemoteNetwork(self, __remoteNetworksObject, __folder="Remote Networks"):
 		"""Create an address group object"""
