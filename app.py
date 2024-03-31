@@ -310,7 +310,7 @@ def pushConfig(conn,configBody):
         response = setResponse(500,"Failed to push configuration")
     return response
 
-def RegisterUserDevice(registration):
+def RegisterUserDevice(registrations):
 # Device ID type
 #   Windows 
 #       —Machine GUID stored in the Windows registry (HKEY_Local_Machine\Software\Microsoft\Cryptography\MachineGuid) 
@@ -326,50 +326,51 @@ def RegisterUserDevice(registration):
 #       —GlobalProtect-assigned unique alphanumeric string with length of 32 characters 
     response = None
     conn = getPrismaAccessConn()
-    registration['Destination'] = '8.8.8.8'
-    DeleteUserDevice(conn,registration)
-    try:
-        user            = registration['User']
-        OS              = registration['OS']
-        device_ID       = registration['Device']
-        destination     = registration['Destination']
-    except:
-        msg = 'Invalid input registration info'
-        response = setResponse(500,msg)
-        print(msg)
-        return response
-    ho = ListHipObjects(conn,MOBILE_USERS)
-    
-    if len(ho['data']) > 0:
-        for d in ho['data']:  #check device identical to input registration info
-            try:
-                if d['host_info']['criteria']['host_id']['is'] == device_ID:
-                    msg = 'Device ID (' + device_ID + ') is already existing'
-                    response = setResponse(500,msg)
-                    return response # there is device registry existing in Prisma Access
-            except KeyError:
-                pass
+    for registration in registrations:
+        registration['Destination'] = '8.8.8.8'
+        DeleteUserDevice(conn,registration)
+        try:
+            user            = registration['User']
+            OS              = registration['OS']
+            device_ID       = registration['Device']
+            destination     = registration['Destination']
+        except:
+            msg = 'Invalid input registration info'
+            response = setResponse(500,msg)
+            print(msg)
+            return response
+        ho = ListHipObjects(conn,MOBILE_USERS)
         
-        # there is no device registry existing in Prisma Access and start to do registration
-        # step 1: add HIP object
-        objectName = CreateHIPObject(conn,registration)
-        if not objectName:
-            response = setResponse(500,"Failed to create HIP object")
-        # step 2: add HIP profile by adding HIP object
-        profileName = CreateHIPProfile(conn,objectName)
-        if not profileName:
-            response = setResponse(500,"Failed to create HIP profile")
-        # step 3: add security policy including HIP profile
-        policy = {
-                "name": getSecurityPolicyName(profileName),
-                "source_user": user,
-                "source_hip": profileName,
-                "destination": destination
-            }
-        securityPolicy = CreateSecurityPolicy(conn,policy)
-        if not securityPolicy:
-            response = setResponse(500,"Failed to create security policy")
-        
+        if len(ho['data']) > 0:
+            for d in ho['data']:  #check device identical to input registration info
+                try:
+                    if d['host_info']['criteria']['host_id']['is'] == device_ID:
+                        msg = 'Device ID (' + device_ID + ') is already existing'
+                        response = setResponse(500,msg)
+                        return response # there is device registry existing in Prisma Access
+                except KeyError:
+                    pass
+            
+            # there is no device registry existing in Prisma Access and start to do registration
+            # step 1: add HIP object
+            objectName = CreateHIPObject(conn,registration)
+            if not objectName:
+                response = setResponse(500,"Failed to create HIP object")
+            # step 2: add HIP profile by adding HIP object
+            profileName = CreateHIPProfile(conn,objectName)
+            if not profileName:
+                response = setResponse(500,"Failed to create HIP profile")
+            # step 3: add security policy including HIP profile
+            policy = {
+                    "name": getSecurityPolicyName(profileName),
+                    "source_user": user,
+                    "source_hip": profileName,
+                    "destination": destination
+                }
+            securityPolicy = CreateSecurityPolicy(conn,policy)
+            if not securityPolicy:
+                response = setResponse(500,"Failed to create security policy")
+            
         # step 4: push config
         pushResult = pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
         if not pushResult:
@@ -398,15 +399,26 @@ def lambda_handler(event, context):
     # pushConfig(conn,{"description":reg["User"],"folders":[MOBILE_USERS]})
     # print(output)
 
-# if __name__ == '__main__':
-    # # -----------------------------------
+if __name__ == '__main__':
+    # -----------------------------------
     # output = ListLocalUsers(conn)
     
-    # reg = {
-    #         'User':'peter',
-    #         'OS':'Windows',
-    #         'ID':'2537edb1-3a2e-4281-a2b6-bf367f46415c',
-    #         'Destination':'8.8.8.8'
-    #       }
+    reg = [
+            {
+                "User":"user02",
+                "OS":"Windows",
+                "ID":"123456",
+                "Destination":"8.8.8.8"
+            },
+            {
+                "User":"user03",
+                "OS":"Linux",
+                "ID":"987654321",
+                "Destination":"8.8.8.8"
+            }
+        ]
     # event = {"reg":reg}
-    # lambda_handler(event,{})
+    event = {}
+    event['payload'] = reg
+    event['operation'] = 'register'
+    lambda_handler(event,{})
