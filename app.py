@@ -69,9 +69,7 @@ def getPrismaAccessConn():
     )
 
     try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
     except ClientError as e:
         # For a list of exceptions thrown, see
         # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
@@ -324,9 +322,9 @@ def RegisterUserDevice(registrations):
 #       —Product UUID retrieved from the system DMI table 
 #   Chrome 
 #       —GlobalProtect-assigned unique alphanumeric string with length of 32 characters 
-    response = None
     conn = getPrismaAccessConn()
-    for registration in registrations:
+    
+    for registration in registrations['reg']:
         registration['Destination'] = '8.8.8.8'
         DeleteUserDevice(conn,registration)
         try:
@@ -371,14 +369,14 @@ def RegisterUserDevice(registrations):
             if not securityPolicy:
                 response = setResponse(500,"Failed to create security policy")
             
-        # step 4: push config
-        pushResult = pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
-        if not pushResult:
-            response = setResponse(500,"Failed to push config")
+    # step 4: push config
+    pushResult = pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
+    if not pushResult:
+        response = setResponse(500,"Failed to push config")
 
-        # User and device creation successfully
-        if  (objectName and profileName and securityPolicy and pushResult):
-            response = setResponse(200,"OK")       
+    # User and device creation successfully
+    if  (objectName and profileName and securityPolicy and pushResult):
+        response = setResponse(200,"OK")       
     return response
 
 def lambda_handler(event, context):
@@ -391,34 +389,28 @@ def lambda_handler(event, context):
         return operations[operation](event.get('payload'))
     else:
         raise ValueError('Unrecognized operation "{}"'.format(operation))
-    # conn = getPrismaAccessConn()
+  
 
-    # reg = event['reg']
-    # DeleteUserDevice(conn,reg)
-    # output = RegisterUserDevice(conn, reg)
-    # pushConfig(conn,{"description":reg["User"],"folders":[MOBILE_USERS]})
-    # print(output)
-
-if __name__ == '__main__':
-    # -----------------------------------
-    # output = ListLocalUsers(conn)
+# if __name__ == '__main__':
+#     # -----------------------------------
+#     # output = ListLocalUsers(conn)
     
-    reg = [
-            {
-                "User":"user02",
-                "OS":"Windows",
-                "ID":"123456",
-                "Destination":"8.8.8.8"
-            },
-            {
-                "User":"user03",
-                "OS":"Linux",
-                "ID":"987654321",
-                "Destination":"8.8.8.8"
-            }
-        ]
-    # event = {"reg":reg}
-    event = {}
-    event['payload'] = reg
-    event['operation'] = 'register'
-    lambda_handler(event,{})
+#     reg = [
+#             {
+#                 "User":"user02",
+#                 "OS":"Windows",
+#                 "Device":"123456",
+#                 "Destination":"8.8.8.8"
+#             },
+#             {
+#                 "User":"user03",
+#                 "OS":"Linux",
+#                 "Device":"987654321",
+#                 "Destination":"8.8.8.8"
+#             }
+#         ]
+#     # event = {"reg":reg}
+#     event = {}
+#     event['payload'] = reg
+#     event['operation'] = 'register'
+#     lambda_handler(event,{})
