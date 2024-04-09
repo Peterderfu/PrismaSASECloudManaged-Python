@@ -307,6 +307,21 @@ def pushConfig(conn,configBody):
         print("Pushing configuration - FAIL")
         response = setResponse(500,"Failed to push configuration")
     return response
+def UpdateLocalUsers(users):
+    conn = getPrismaAccessConn()
+    for user in users['reg']:
+        response = LockLocalUsers(conn,user)
+        
+            
+    # step 4: push config
+    pushResult = pushConfig(conn,{"description":user,"folders":[MOBILE_USERS]})
+    if not pushResult:
+        response = setResponse(500,"Failed to push config")
+
+    # # User and device creation successfully
+    # if  (objectName and profileName and securityPolicy and pushResult):
+    #     response = setResponse(200,"OK")       
+    return response
 
 def RegisterUserDevice(registrations):
 # Device ID type
@@ -383,7 +398,8 @@ def lambda_handler(event, context):
     operation = event['operation']
     operations = {
         'register': RegisterUserDevice,
-        'list': ListLocalUsers
+        'list': ListLocalUsers,
+        'update':UpdateLocalUsers
     }
     if operation in operations:
         return operations[operation](event.get('payload'))
